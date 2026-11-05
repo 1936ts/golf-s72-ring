@@ -1,0 +1,40 @@
+name: Update golf ring
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency: golf
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install garminconnect==0.3.20
+      - uses: actions/cache/restore@v4
+        with:
+          path: .tokens
+          key: garmin-${{ github.run_id }}
+          restore-keys: garmin-
+      - run: python fetch.py
+        env:
+          GARMIN_TOKENS: ${{ secrets.GARMIN_TOKENS }}
+      - uses: actions/cache/save@v4
+        if: success()
+        with:
+          path: .tokens
+          key: garmin-${{ github.run_id }}
+      - name: Commit golf.json
+        run: |
+          git config user.name "golf-ring-bot"
+          git config user.email "golf-ring-bot@users.noreply.github.com"
+          git add golf.json
+          git diff --cached --quiet || (git commit -m "Update golf.json" && git push)
