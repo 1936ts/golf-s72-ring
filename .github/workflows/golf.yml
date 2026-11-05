@@ -17,6 +17,8 @@ concurrency: golf
 
 jobs:
   update:
+    # the template itself never reads anyone's Garmin data: only the copies do
+    if: github.repository != '1936ts/golf-s72-ring'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
