@@ -44,6 +44,14 @@ def load(path):
         return ""
 
 
+def mark(state):
+    """Writes the login state in golf.json, readable by anyone: "ok", or "code" while waiting for the Garmin code."""
+    data = json.loads(OUT.read_text()) if OUT.exists() else {}
+    data["etat"] = state
+    OUT.write_text(json.dumps(data) + "
+")
+
+
 def login():
     store = load(TOKENS) or TOKEN_SECRET
     if store:
@@ -60,12 +68,14 @@ def login():
         return g
     if state and not MANUAL:
         print("Waiting for the Garmin code: Actions > Update golf ring > Run workflow, type the code.")
+        mark("code")
         sys.exit(0)
     status, state = g.login()
     if status == "needs_mfa":
         save(PENDING, json.dumps(state))
         print("Garmin sent you a code by email or SMS. Now: Actions > Update golf ring > Run workflow, "
               "type the code in the box, Run workflow.")
+        mark("code")
         sys.exit(0)
     return g
 
@@ -92,6 +102,7 @@ def main():
         }
     # one change a day at least, so GitHub keeps the schedule running (it pauses after 60 days without commits)
     result["maj"] = date.today().isoformat()
+    result["etat"] = "ok"
     OUT.write_text(json.dumps(result) + "\n")
     print("golf.json:", result)
     save(TOKENS, g.client.dumps())
