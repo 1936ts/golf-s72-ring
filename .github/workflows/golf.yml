@@ -26,6 +26,8 @@ jobs:
           restore-keys: garmin-
       - run: python fetch.py
         env:
+          GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL }}
+          GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
           GARMIN_TOKENS: ${{ secrets.GARMIN_TOKENS }}
       - uses: actions/cache/save@v4
         if: success()

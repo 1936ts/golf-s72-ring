@@ -1,32 +1,32 @@
 # golf-s72-ring
 
-Full colours, hole by hole, for the golf ring of the **Golf S72 Data+** watch face (Connect IQ store).
+Real hole-by-hole colours for the golf ring of the **Golf S72 Data+** watch face: birdies (blue), pars (green), bogeys (yellow), double bogeys or worse (red), from your Garmin Connect account. Free, 5 minutes, all in your browser.
 
-Without this, the ring is estimated from the score the watch gives (stroke play or Stableford setting). With it, the ring shows your real last round: eagles (purple), birdies (blue), pars (green), bogeys (yellow), double bogeys or worse (red).
+## 4 steps, once
 
-How it works: every 30 minutes, GitHub reads your last round in Garmin Connect (free, on your own GitHub account) and writes `golf.json` here. The watch face reads that file through your phone. Only the counts are published, never the course, date or place. Your Garmin password is never stored: you log in once on your computer and paste a token in a GitHub secret.
-
-## Steps (15 minutes, once)
-
-1. **Fork this repository** to your GitHub account (button *Fork*, top right). Keep the name `golf-s72-ring` and keep it public (the watch reads the file without a password).
-2. **Get your Garmin token**, on your computer, with Python 3.10 or newer:
-   ```
-   pip install garminconnect==0.3.20
-   python get_token.py
-   ```
-   Enter your Garmin Connect email, password, and the code Garmin sends you if asked. Copy the long line it prints.
-
-   No Python on your computer? Do it in your browser: in your fork, click **Code > Codespaces > Create codespace on main** (free), wait for the terminal at the bottom, type the two lines above, copy the line, then close the codespace (and delete it in github.com/codespaces).
-3. In your fork: **Settings > Secrets and variables > Actions > New repository secret**. Name: `GARMIN_TOKENS`, value: the line from step 2.
-4. Tab **Actions**: click *I understand my workflows, go ahead and enable them*, then *Update golf ring* > *Enable workflow* > *Run workflow*. After a minute, `golf.json` shows your last round.
-5. On your phone, **Connect IQ app > your watch > Watch faces > Golf S72 Data+ > Settings**:
+1. **GitHub account**: free at [github.com/signup](https://github.com/signup) (email only).
+2. On this page, click **Use this template > Create a new repository**. Name: `golf-s72-ring`, **Public**, then *Create repository*.
+3. In your new repository: **Settings > Secrets and variables > Actions > New repository secret**, twice:
+   - Name `GARMIN_EMAIL`, secret: your Garmin Connect email
+   - Name `GARMIN_PASSWORD`, secret: your Garmin Connect password
+4. On your phone, **Connect IQ app > your watch > Watch faces > Golf S72 Data+ > Settings**:
    - Golf ring: *Full data*
    - Personal code: `your-github-name/golf-s72-ring`
 
-The ring updates within 15 minutes, then after each new round.
+That's it. Within 30 minutes your ring shows your last round, then updates after each new round.
 
-Notes: this uses the unofficial library [python-garminconnect](https://github.com/cyberjunky/python-garminconnect), as Garmin has no public golf API. If Garmin ever refuses the login, redo steps 2 and 3. The workflow writes the date once a day so that GitHub keeps it running.
+## Good to know
+
+- Secrets are encrypted by GitHub: nobody can read them, not even you. Only the counts are published in `golf.json` (no course, date or place).
+- Your password is used once; afterwards a renewed login token is kept in the private cache of your repository.
+- Garmin has no public golf API: this uses the unofficial library [python-garminconnect](https://github.com/cyberjunky/python-garminconnect).
+- If your Garmin account asks for a code by email or SMS at login, use the token instead of step 3: in your repository, **Code > Codespaces > Create codespace on main**, type `pip install garminconnect==0.3.20` then `python get_token.py`, and put the line it prints in a secret named `GARMIN_TOKENS`.
 
 ## En français
 
-Même chose en bref (compte GitHub gratuit sur github.com/signup ; sans Python sur l'ordinateur, l'étape 2 se fait dans le navigateur par Code > Codespaces > Create codespace on main) : forker ce dépôt (public, même nom), lancer `python get_token.py` sur son ordinateur, coller la ligne obtenue dans le secret `GARMIN_TOKENS` (Settings > Secrets and variables > Actions), activer et lancer *Update golf ring* dans l'onglet Actions, puis dans l'appli Connect IQ, réglages du cadran : Rond golf = *Données complètes*, Code personnel = `votre-nom-github/golf-s72-ring`.
+1. Compte GitHub gratuit sur github.com/signup.
+2. Sur cette page : **Use this template > Create a new repository**, nom `golf-s72-ring`, **Public**.
+3. Dans votre dépôt : **Settings > Secrets and variables > Actions > New repository secret** : `GARMIN_EMAIL` (votre adresse Garmin Connect) et `GARMIN_PASSWORD` (votre mot de passe).
+4. Appli Connect IQ, réglages du cadran : Rond golf = *Données complètes*, Code personnel = `votre-nom-github/golf-s72-ring`.
+
+Le rond prend vos vraies couleurs dans les 30 minutes.

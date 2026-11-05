@@ -16,10 +16,17 @@ OUT = Path("golf.json")
 
 def main():
     store = TOKENS.read_text() if TOKENS.exists() else os.environ.get("GARMIN_TOKENS", "").strip()
-    if not store:
-        raise SystemExit("GARMIN_TOKENS secret is missing: see README, step 3.")
-    g = Garmin()
-    g.login(store)
+    email = os.environ.get("GARMIN_EMAIL", "").strip()
+    password = os.environ.get("GARMIN_PASSWORD", "")
+    if store:
+        g = Garmin()
+        g.login(store)
+    elif email and password:
+        # first run: log in with the two secrets, then the renewed tokens are kept in the cache
+        g = Garmin(email, password)
+        g.login()
+    else:
+        raise SystemExit("Add the GARMIN_EMAIL and GARMIN_PASSWORD secrets: see README, step 3.")
     summary = g.get_golf_summary(limit=1)
     cards = summary.get("scorecardSummaries") if isinstance(summary, dict) else summary
     old = json.loads(OUT.read_text()) if OUT.exists() else {}
