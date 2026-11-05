@@ -21,9 +21,8 @@ Your ring shows your last round within 15 minutes, then updates after each new r
 ## Good to know
 
 - Secrets are encrypted by GitHub: nobody can read them, not even you. Only the counts are published in `golf.json` (no course, date or place).
-- Your password is used once; afterwards a renewed login token is kept in the private cache of your repository.
 - Garmin has no public golf API: this uses the unofficial library [python-garminconnect](https://github.com/cyberjunky/python-garminconnect).
-- Your saved login is encrypted with your secrets in the Actions cache of your repository, never in the files.
+- Your password is used once. Afterwards the renewed login is kept encrypted with your secrets in the Actions cache of your repository, never in the files.
 
 ## En français
 
