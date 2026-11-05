@@ -2,31 +2,76 @@
 
 Only hole counts are published (eagles, birdies, pars, bogeys, double bogeys or worse): no course, no date
 of play, no location. Uses the unofficial python-garminconnect library (Garmin has no public golf API).
+
+Login: GARMIN_EMAIL + GARMIN_PASSWORD secrets. If Garmin sends a code by email or SMS, the run stops and
+waits; run the workflow by hand with that code. The renewed login is kept, encrypted with your secrets,
+in the Actions cache (.tokens), never committed.
 """
+import base64
+import hashlib
 import json
 import os
+import sys
 from datetime import date
 from pathlib import Path
 
+from cryptography.fernet import Fernet, InvalidToken
 from garminconnect import Garmin
 
-TOKENS = Path(".tokens/tokens.json")   # renewed tokens, kept in the private Actions cache, never committed
+DIR = Path(".tokens")
+TOKENS = DIR / "tokens.bin"
+PENDING = DIR / "pending.bin"
 OUT = Path("golf.json")
 
+EMAIL = os.environ.get("GARMIN_EMAIL", "").strip()
+PASSWORD = os.environ.get("GARMIN_PASSWORD", "")
+TOKEN_SECRET = os.environ.get("GARMIN_TOKENS", "").strip()
+CODE = os.environ.get("MFA_CODE", "").strip()
+MANUAL = os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
 
-def main():
-    store = TOKENS.read_text() if TOKENS.exists() else os.environ.get("GARMIN_TOKENS", "").strip()
-    email = os.environ.get("GARMIN_EMAIL", "").strip()
-    password = os.environ.get("GARMIN_PASSWORD", "")
+KEY = base64.urlsafe_b64encode(hashlib.sha256((EMAIL + PASSWORD + TOKEN_SECRET).encode()).digest())
+
+
+def save(path, text):
+    DIR.mkdir(exist_ok=True)
+    path.write_bytes(Fernet(KEY).encrypt(text.encode()))
+
+
+def load(path):
+    try:
+        return Fernet(KEY).decrypt(path.read_bytes()).decode() if path.exists() else ""
+    except InvalidToken:
+        return ""
+
+
+def login():
+    store = load(TOKENS) or TOKEN_SECRET
     if store:
         g = Garmin()
         g.login(store)
-    elif email and password:
-        # first run: log in with the two secrets, then the renewed tokens are kept in the cache
-        g = Garmin(email, password)
-        g.login()
-    else:
-        raise SystemExit("Add the GARMIN_EMAIL and GARMIN_PASSWORD secrets: see README, step 3.")
+        return g
+    if not (EMAIL and PASSWORD):
+        sys.exit("Add the GARMIN_EMAIL and GARMIN_PASSWORD secrets: see README, step 3.")
+    g = Garmin(EMAIL, PASSWORD, return_on_mfa=True)
+    state = load(PENDING)
+    if state and CODE:
+        g.resume_login(json.loads(state), CODE)
+        PENDING.unlink()
+        return g
+    if state and not MANUAL:
+        print("Waiting for the Garmin code: Actions > Update golf ring > Run workflow, type the code.")
+        sys.exit(0)
+    status, state = g.login()
+    if status == "needs_mfa":
+        save(PENDING, json.dumps(state))
+        print("Garmin sent you a code by email or SMS. Now: Actions > Update golf ring > Run workflow, "
+              "type the code in the box, Run workflow.")
+        sys.exit(0)
+    return g
+
+
+def main():
+    g = login()
     summary = g.get_golf_summary(limit=1)
     cards = summary.get("scorecardSummaries") if isinstance(summary, dict) else summary
     old = json.loads(OUT.read_text()) if OUT.exists() else {}
@@ -48,9 +93,8 @@ def main():
     # one change a day at least, so GitHub keeps the schedule running (it pauses after 60 days without commits)
     result["maj"] = date.today().isoformat()
     OUT.write_text(json.dumps(result) + "\n")
-    print("golf.json:", {k: v for k, v in result.items()})
-    TOKENS.parent.mkdir(exist_ok=True)
-    TOKENS.write_text(g.client.dumps())
+    print("golf.json:", result)
+    save(TOKENS, g.client.dumps())
 
 
 if __name__ == "__main__":
