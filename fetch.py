@@ -48,8 +48,7 @@ def mark(state):
     """Writes the login state in golf.json, readable by anyone: "ok", or "code" while waiting for the Garmin code."""
     data = json.loads(OUT.read_text()) if OUT.exists() else {}
     data["etat"] = state
-    OUT.write_text(json.dumps(data) + "
-")
+    OUT.write_text(json.dumps(data) + "\n")
 
 
 def login():
